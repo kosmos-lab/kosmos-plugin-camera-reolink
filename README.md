@@ -9,7 +9,7 @@
 If you want to compile it yourself you can do so with
 
 ```shell
-mvn clean deploy
+mvn clean package
 ```
 
 This should create a zip in the target folder.
