@@ -4,7 +4,9 @@
     <groupId>de.kosmos-lab.platform</groupId>
     <version>0.1.2</version>
     <artifactId>kosmos-plugin-camera-reolink</artifactId>
-
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Reolink Camera Plugin for KosmoS Platform</description>
+    <url>https://github.com/kosmos-lab/kosmos-plugin-camera-reolink</url>
     <issueManagement>
         <url>https://github.com/kosmos-lab/kosmos-plugin-camera-reolink/issues</url>
         <system>GitHub Issues</system>
