@@ -30,3 +30,7 @@ jobs:
         # Artifact name
         
         path: target/*.zip
+    - name: Auto Release
+      # You may pin to the exact commit or the version.
+      # uses: CupOfTea696/gh-action-auto-release@a8f57f49a805d334ac7abe31b689e7ea24e1ee40
+      uses: CupOfTea696/gh-action-auto-release@v1.0.2
