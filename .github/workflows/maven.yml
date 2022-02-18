@@ -30,9 +30,9 @@ jobs:
         # Artifact name
         
         path: target/*.zip
-    - name: Auto Release
+    - name: Upload the artifacts
+      uses: skx/github-action-publish-binaries@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # You may pin to the exact commit or the version.
-      # uses: CupOfTea696/gh-action-auto-release@a8f57f49a805d334ac7abe31b689e7ea24e1ee40
-      uses: CupOfTea696/gh-action-auto-release@v1.0.2
+      with:
+        args: target/*.zip'
