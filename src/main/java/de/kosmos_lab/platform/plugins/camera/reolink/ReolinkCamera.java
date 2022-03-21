@@ -316,7 +316,22 @@ public class ReolinkCamera implements ICamera {
         }
         return bytes;
     }
-    
+
+    @Override
+    public void startRecording() {
+
+    }
+
+    @Override
+    public void stopRecording() {
+
+    }
+
+    @Override
+    public String getName() {
+        return this.name;
+    }
+
     public void stop() {
         try {
             this.client.stop();

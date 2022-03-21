@@ -65,7 +65,7 @@
         <pf4jVersion>3.6.0</pf4jVersion>
         <plugin.id>ReolinkCameraPlugin</plugin.id>
         <plugin.class>de.kosmos_lab.platform.plugins.camera.reolink.ReolinkCameraPlugin</plugin.class>
-        <plugin.version>0.1</plugin.version>
+        <plugin.version>0.1.1</plugin.version>
         <plugin.provider>Jan Janssen</plugin.provider>
         <plugin.dependencies/>
     </properties>
@@ -185,7 +185,7 @@
         </dependency>
         <dependency>
             <groupId>de.kosmos-lab.platform</groupId>
-            <version>0.1</version>
+            <version>0.1.2</version>
             <artifactId>kosmos-plugins</artifactId>
         </dependency>
 
