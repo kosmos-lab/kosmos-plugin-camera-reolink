@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.kosmos-lab.platform</groupId>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
     <artifactId>kosmos-plugin-camera-reolink</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Reolink Camera Plugin for KosmoS Platform</description>
@@ -180,12 +180,12 @@
         </dependency>
         <dependency>
             <groupId>de.kosmos-lab</groupId>
-            <version>0.1.1</version>
+            <version>0.1.5</version>
             <artifactId>kosmos-utils</artifactId>
         </dependency>
         <dependency>
             <groupId>de.kosmos-lab.platform</groupId>
-            <version>0.1.2</version>
+            <version>0.1.3</version>
             <artifactId>kosmos-plugins</artifactId>
         </dependency>
 
