@@ -180,12 +180,12 @@
         </dependency>
         <dependency>
             <groupId>de.kosmos-lab</groupId>
-            <version>0.1.5</version>
+            <version>0.1.6</version>
             <artifactId>kosmos-utils</artifactId>
         </dependency>
         <dependency>
             <groupId>de.kosmos-lab.platform</groupId>
-            <version>0.1.5</version>
+            <version>0.1.6</version>
             <artifactId>kosmos-plugins</artifactId>
         </dependency>
 
