@@ -3,6 +3,7 @@ package de.kosmos_lab.platform.plugins.camera.reolink;
 import de.kosmos_lab.platform.plugins.camera.ICamera;
 import de.kosmos_lab.platform.plugins.camera.exceptions.VideoNotAvailableException;
 import de.kosmos_lab.utils.FFMPEGWrapper;
+import de.kosmos_lab.utils.FFMPEGWrapper.FFMPPEGRecording;
 import de.kosmos_lab.utils.KosmosFileUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -21,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -31,20 +34,35 @@ import java.util.concurrent.TimeoutException;
 @Extension
 public class ReolinkCamera implements ICamera {
     protected static final Logger logger = LoggerFactory.getLogger("ReolinkCamera");
-    
+
     private final String password;
     private final String username;
     private final String base;
     private final HttpClient client;
     private final String name;
+    private String host;
     private String mydir = "tmp";
-    
-    
+    private FFMPPEGRecording recording = null;
+
+
     public ReolinkCamera(JSONObject options) {
         this.password = options.getString("password");
         this.username = options.getString("username");
         this.name = options.getString("name");
         this.base = options.getString("base") + "/cgi-bin/api.cgi?user=" + username + "&password=" + password;
+        URI uri = null;
+        try {
+            uri = new URI(options.getString("base"));
+            this.host = uri.getHost();
+        } catch (URISyntaxException e) {
+
+
+        }
+        if (host == null) {
+            this.host = options.getString("base").replace("https://", "").replace("http://", "");
+        }
+
+
         this.client = new HttpClient();
         try {
             this.client.start();
@@ -52,7 +70,7 @@ public class ReolinkCamera implements ICamera {
             e.printStackTrace();
         }
     }
-    
+
     private Calendar convertToCal(JSONObject json) {
         Calendar c = Calendar.getInstance();
         c.set(Calendar.YEAR, json.getInt("year"));
@@ -62,9 +80,9 @@ public class ReolinkCamera implements ICamera {
         c.set(Calendar.MINUTE, json.getInt("min"));
         c.set(Calendar.SECOND, json.getInt("sec"));
         return c;
-        
+
     }
-    
+
     private JSONObject convertToJSON(Calendar cal) {
         JSONObject json = new JSONObject();
         json.put("year", cal.get(Calendar.YEAR));
@@ -75,7 +93,7 @@ public class ReolinkCamera implements ICamera {
         json.put("sec", cal.get(Calendar.SECOND));
         return json;
     }
-    
+
     private Request createRequest(HttpMethod method, HashMap<String, String> parameters, JSONObject json) {
         Request request = client.newRequest(base);
         if (parameters != null) {
@@ -91,11 +109,11 @@ public class ReolinkCamera implements ICamera {
         request.agent("KosmoS Client");
         return request;
     }
-    
+
     private Request createRequest(HttpMethod method, HashMap<String, String> parameters, JSONArray json) {
         return createRequest(null, method, parameters, json);
     }
-    
+
     private Request createRequest(String url, HttpMethod method, HashMap<String, String> parameters, JSONArray json) {
         Request request;
         if (url != null) {
@@ -103,7 +121,7 @@ public class ReolinkCamera implements ICamera {
         } else {
             request = client.newRequest(base);
         }
-        
+
         if (parameters != null) {
             for (Map.Entry<String, String> e : parameters.entrySet()) {
                 request.param(e.getKey(), e.getValue());
@@ -117,9 +135,9 @@ public class ReolinkCamera implements ICamera {
         request.agent("KosmoS Client");
         return request;
     }
-    
+
     private void download(String name) {
-        
+
         String fname = "tmp/" + name;
         logger.info("downloading recording {} to {}", name, fname);
         File f = new File(fname);
@@ -128,25 +146,25 @@ public class ReolinkCamera implements ICamera {
             Request req = this.createRequest("&cmd=Download&source=" + name + "&ouptut=" + name, HttpMethod.GET, null, (JSONArray) null);
             try {
                 InputStreamResponseListener listener = new InputStreamResponseListener();
-                
+
                 req.send(listener);
                 Response response = listener.get(20, TimeUnit.SECONDS);
-                
+
                 if (response.getStatus() == 200) {
                     // Obtain the input stream on the response content
                     try (InputStream input = listener.getInputStream()) {
                         byte[] bytes = input.readAllBytes();
-                        
+
                         logger.info("read {} for file {}", bytes.length, fname);
                         KosmosFileUtils.writeToFile(f, bytes);
-                        
+
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 } else {
                     logger.warn("Status mismatch! {}", response.getStatus());
                 }
-                
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (TimeoutException e) {
@@ -158,7 +176,7 @@ public class ReolinkCamera implements ICamera {
             logger.info("file already downloaded");
         }
     }
-    
+
     public File getRecording(Calendar calStart, Calendar calEnd, long delta) throws VideoNotAvailableException {
         Collection<String> parts = new LinkedList<>();
         JSONObject json = new JSONObject();
@@ -173,14 +191,14 @@ public class ReolinkCamera implements ICamera {
         json.put("action", 1);
         JSONObject param = new JSONObject();
         JSONObject search = new JSONObject();
-        
+
         search.put("channel", 0);
         search.put("onlyStatus", 0);
         search.put("streamType", "main");
         //from.getMinutes()
         Calendar videostart = null;
         Calendar videoend = null;
-        
+
         search.put("EndTime", convertToJSON(calEnd));
         search.put("StartTime", convertToJSON(calStart));
         param.put("Search", search);
@@ -191,10 +209,10 @@ public class ReolinkCamera implements ICamera {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
         String timePattern = "HH:mm:ss";
         String filename = this.name + "_" + simpleDateFormat.format(calStart.getTime());
-        
+
         File jsonfile = new File(mydir + "/" + filename + ".json");
         File hashfile = new File(mydir + "/" + filename + ".txt");
-        
+
         File outfile = new File(mydir + "/" + filename + ".mp4");
         if (outfile.exists()) {
             outfile.delete();
@@ -227,7 +245,7 @@ public class ReolinkCamera implements ICamera {
                             logger.info("download finished - downloaded {} files", files.length());
                         } else {
                             logger.warn("NO DOWNLOAD!");
-                            
+
                         }
                     } catch (JSONException ex) {
                         ex.printStackTrace();
@@ -250,17 +268,17 @@ public class ReolinkCamera implements ICamera {
             }
             videostart.add(Calendar.MILLISECOND, (int) -delta);
             videoend.add(Calendar.MILLISECOND, (int) -delta);
-            
+
             KosmosFileUtils.writeToFile(hashfile, concat.toString());
             Locale locale = new Locale("en", "US");
             DateFormat dateFormat = DateFormat.getTimeInstance(DateFormat.FULL, locale);
-            
+
             logger.info("startdate {} enddate {}", dateFormat.format(videostart.getTime()), dateFormat.format(videoend.getTime()));
             logger.info("wanted {} enddate {}", dateFormat.format(calStart.getTime()), dateFormat.format(calEnd.getTime()));
             long startDelta = calStart.getTimeInMillis() - videostart.getTimeInMillis();
             long wantedDuration = calEnd.getTimeInMillis() - calStart.getTimeInMillis();
-            
-            
+
+
             try {
                 FFMPEGWrapper.mergeVideos(parts, outfile, startDelta, wantedDuration);
             } catch (IOException e) {
@@ -270,7 +288,7 @@ public class ReolinkCamera implements ICamera {
             json.put("videostart", videostart.getTimeInMillis() - delta);
             json.put("videoend", videoend.getTimeInMillis() - delta);
             KosmosFileUtils.writeToFile(jsonfile, json.toString());
-            
+
         } else {
             json = new JSONObject(KosmosFileUtils.readFile(jsonfile));
             videoend = Calendar.getInstance();
@@ -278,35 +296,35 @@ public class ReolinkCamera implements ICamera {
             videostart = Calendar.getInstance();
             videostart.setTimeInMillis(json.getLong("videostart") - delta);
         }
-        
-        
+
+
         logger.info("download done");
         return outfile;
     }
-    
+
     @Override
     public byte[] getSnapshot() {
         byte[] bytes = null;
         Request req = this.createRequest("&cmd=Snap&channel=0", HttpMethod.GET, null, (JSONArray) null);
         try {
             InputStreamResponseListener listener = new InputStreamResponseListener();
-            
+
             req.send(listener);
             Response response = listener.get(20, TimeUnit.SECONDS);
-            
+
             if (response.getStatus() == 200) {
                 // Obtain the input stream on the response content
                 try (InputStream input = listener.getInputStream()) {
                     bytes = input.readAllBytes();
-                    
-                    
+
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             } else {
                 logger.warn("Status mismatch! {}", response.getStatus());
             }
-            
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (TimeoutException e) {
@@ -318,13 +336,55 @@ public class ReolinkCamera implements ICamera {
     }
 
     @Override
-    public void startRecording() {
+    public byte[] getSnapshot(int width, int height) {
+        byte[] bytes = null;
+        Request req = this.createRequest(String.format("&cmd=Snap&channel=0&width=%d&height=%d",width,height), HttpMethod.GET, null, (JSONArray) null);
+        try {
+            InputStreamResponseListener listener = new InputStreamResponseListener();
 
+            req.send(listener);
+            Response response = listener.get(20, TimeUnit.SECONDS);
+
+            if (response.getStatus() == 200) {
+                // Obtain the input stream on the response content
+                try (InputStream input = listener.getInputStream()) {
+                    bytes = input.readAllBytes();
+
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                logger.warn("Status mismatch! {}", response.getStatus());
+            }
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return bytes;
+    }
+
+    @Override
+    public FFMPPEGRecording startRecording(File f) {
+        this.recording = new FFMPEGWrapper.FFMPPEGRecording(f, String.format("rtsp://%s:%s@%s//h264Preview_01_main", username, password, host));
+        try {
+            this.recording.start();
+        } catch (IOException e) {
+            logger.error("could not start recording", e);
+        }
+        return this.recording;
     }
 
     @Override
     public void stopRecording() {
-
+        if (this.recording != null) {
+            this.recording.stop();
+            this.recording = null;
+        }
     }
 
     @Override
@@ -338,5 +398,10 @@ public class ReolinkCamera implements ICamera {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean isRecording() {
+        return this.recording != null;
+
     }
 }
